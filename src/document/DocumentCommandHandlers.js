@@ -56,7 +56,8 @@ define(function (require, exports, module) {
         Inspector           = require("LiveDevelopment/Inspector/Inspector"),
         Menus               = require("command/Menus"),
         UrlParams           = require("utils/UrlParams").UrlParams,
-        StatusBar           = require("widgets/StatusBar");
+        StatusBar           = require("widgets/StatusBar"),
+        OutputTemplate      = require("text!template/index.html");
 
     /**
      * Handlers for commands related to document handling (opening, saving, etc.)
@@ -555,6 +556,7 @@ define(function (require, exports, module) {
         //}
         var defaultExtension = "";  // disable preference setting for now
         
+        // TODO! Rename method 'createUntitledDocument' to 'createNewSlide'
         var doc = DocumentManager.createUntitledDocument(_nextUntitledIndexToUse++, defaultExtension);
         DocumentManager.setCurrentDocument(doc);
         EditorManager.focusEditor();
@@ -907,7 +909,8 @@ define(function (require, exports, module) {
         // Do in serial because doSave shows error UI for each file, and we don't want to stack
         // multiple dialogs on top of each other
         var userCanceled = false,
-            filesAfterSave = [];
+            filesAfterSave = [],
+            sectionsContent = "";
             
         return Async.doSequentially(
             fileList,
@@ -919,17 +922,25 @@ define(function (require, exports, module) {
                 
                 var doc = DocumentManager.getOpenDocumentForPath(file.fullPath);
                 if (doc) {
-                    var savePromise = handleFileSave({doc: doc});
-                    savePromise
-                        .done(function (newFile) {
-                            filesAfterSave.push(newFile);
-                        })
-                        .fail(function (error) {
-                            if (error === USER_CANCELED) {
-                                userCanceled = true;
-                            }
-                        });
-                    return savePromise;
+                    
+                    // \/ created by me
+                    
+                    sectionsContent+='<section>'+doc.getText()+'</section>';
+                    
+                    // /\ created by me
+                    
+                    // Removed. There is no need to save each and every file as in the editor
+//                    var savePromise = handleFileSave({doc: doc});
+//                    savePromise
+//                        .done(function (newFile) {
+//                            filesAfterSave.push(newFile);
+//                        })
+//                        .fail(function (error) {
+//                            if (error === USER_CANCELED) {
+//                                userCanceled = true;
+//                            }
+//                        });
+                    return (new $.Deferred()).resolve().promise();
                 } else {
                     // working set entry that was never actually opened - ignore
                     filesAfterSave.push(file);
@@ -938,6 +949,35 @@ define(function (require, exports, module) {
             },
             false  // if any save fails, continue trying to save other files anyway; then reject at end
         ).then(function () {
+            
+            // \/ created by me - need to do some refactoring, put in different methods and classes
+            
+            var output = Mustache.render(OutputTemplate, {SECTION: sectionsContent});
+                    
+            var path = ProjectManager.getProjectRoot().fullPath+"test.html";
+            // First, write document's current text to new file
+            var newFile = FileSystem.getFileForPath(path);
+
+            // Save as warns you when you're about to overwrite a file, so we
+            // explictly allow "blind" writes to the filesystem in this case,
+            // ignoring warnings about the contents being modified outside of
+            // the editor.
+            FileUtils.writeText(newFile, output, true)
+                .done(function () {
+                })
+                .fail(function (error) {
+                    _showSaveFileError(error, path)
+                        .done(function () {
+                            result.reject(error);
+                        });
+                })
+                .always(function () {
+                    // mark that we're done saving the document
+                    //docDoc.isSaving = false;
+                });
+            
+            // /\ created by me
+            
             return filesAfterSave;
         });
     }

@@ -688,9 +688,19 @@ define(function (require, exports, module) {
      */
     Document.prototype._updateLanguage = function () {
         var oldLanguage = this.language;
-        this.language = LanguageManager.getLanguageForPath(this.file.fullPath);
-        if (oldLanguage && oldLanguage !== this.language) {
-            $(this).triggerHandler("languageChanged", [oldLanguage, this.language]);
+        var fullPath = this.file.fullPath;
+        /* when a slide is created, set by default it's language to html */
+        if (!oldLanguage && this.file instanceof InMemoryFile)
+        {
+            this.language = LanguageManager.getLanguageForPath(this.file.fullPath+'.html');
+            this.setLanguageOverride(this.language);
+        }
+        else
+        {
+            this.language = LanguageManager.getLanguageForPath(this.file.fullPath);
+            if (oldLanguage && oldLanguage !== this.language) {
+                $(this).triggerHandler("languageChanged", [oldLanguage, this.language]);
+            }
         }
     };
     

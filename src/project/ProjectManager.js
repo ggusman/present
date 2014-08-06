@@ -114,6 +114,13 @@ define(function (require, exports, module) {
      * @type {string}
      */
     var SETTINGS_FILENAME = "." + PreferencesManager.SETTINGS_FILENAME;
+    
+    /**
+     * The extension used in the project file
+     * @const
+     * @type {string}
+     */
+    var PROJECT_EXTENSION = ".hyb";
 
     /**
      * @const
@@ -174,6 +181,13 @@ define(function (require, exports, module) {
      * @type {Directory}
      */
     var _projectRoot = null;
+    
+    /**
+     * @private
+     * @see getProjectFilePath()
+     * @type {File}
+     */
+    var _projectFilePath = null;
 
     /**
      * @private
@@ -1052,6 +1066,18 @@ define(function (require, exports, module) {
         return fullPath;
     }
     
+        /**
+     * Remove extension from project file
+     * @param {!string} fullPath  Path that may or may not end in "/"
+     * @return {!string} Path that ends in "/"
+     */
+    function _removeFileName(fullPath) {
+        var extension = fullPath.substr(fullPath.length - 4, 4);
+        if (extension === PROJECT_EXTENSION)
+            fullPath = fullPath.substr(0, fullPath.lastIndexOf('/'));
+        return fullPath;
+    }
+    
     /** Returns the full path to the welcome project, which we open on first launch.
      * @private
      * @return {!string} fullPath reference
@@ -1193,6 +1219,10 @@ define(function (require, exports, module) {
 
         forceFinishRename();    // in case we're in the middle of renaming a file in the project
         
+        // code to get the folder from the project file
+        var originalFileName = rootPath;
+        rootPath = _removeFileName(rootPath);
+        
         // Some legacy code calls this API with a non-canonical path
         rootPath = _ensureTrailingSlash(rootPath);
         
@@ -1257,6 +1287,7 @@ define(function (require, exports, module) {
                         var perfTimerName = PerfUtils.markStart("Load Project: " + rootPath);
 
                         _projectRoot = rootEntry;
+                        _projectFilePath = originalFileName;
                         
                         if (projectRootChanged) {
                             _reloadProjectPreferencesScope();
@@ -1556,7 +1587,7 @@ define(function (require, exports, module) {
                     _loadProject(path, false).then(result.resolve, result.reject);
                 } else {
                     // Pop up a folder browse dialog
-                    FileSystem.showOpenDialog(false, true, Strings.CHOOSE_FOLDER, _projectRoot.fullPath, null, function (err, files) {
+                    FileSystem.showOpenDialog(false, false, Strings.CHOOSE_FOLDER, _projectRoot.fullPath, null, function (err, files) {
                         if (!err) {
                             // If length == 0, user canceled the dialog; length should never be > 1
                             if (files.length > 0) {

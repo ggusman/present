@@ -220,6 +220,12 @@ define({
     "PROJECT_LOADING"   : "Loading\u2026",
     "UNTITLED"          : "Untitled",
     "WORKING_FILES"     : "Working Files",
+    
+    /**
+     * PresentationManager
+     */
+    "PRESENTATION_SLIDES"     : "Slides",
+    "SLIDE"          : "Slide",
 
     /**
      * Keyboard modifier names

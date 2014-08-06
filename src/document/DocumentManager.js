@@ -786,7 +786,7 @@ define(function (require, exports, module) {
      * @return {Document} - a new untitled Document
      */
     function createUntitledDocument(counter, fileExt) {
-        var filename = Strings.UNTITLED + "-" + counter + fileExt,
+        var filename = Strings.SLIDE + "-" + counter + fileExt,
             fullPath = _untitledDocumentPath + "/" + filename,
             now = new Date(),
             file = new InMemoryFile(fullPath, FileSystem);
